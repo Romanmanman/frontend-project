@@ -2,10 +2,49 @@
 <head>
     <title>RPG</title>
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
-    <link href="/css/my.css" rel="stylesheet">
+    <link href="/css/my.css" rel="stylesheet" type="text/css">
 </head>
 <body>
 <h1>RPG admin panel</h1>
-
+<h2>Accounts list:</h2>
+    <table id="tab">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Race</th>
+                <th>Profession</th>
+                <th>Level</th>
+                <th>Birthday</th>
+                <th>Banned</th>
+            </tr>
+        </thead>
+    </table>
+    <script>
+        $.get("/rest/players", function (data) {
+            let arr = ["id", "name", "title", "race", "profession", "level", "birthday", "banned"]
+            let tableTab = document.getElementById('tab')
+            let tableBody = document.createElement('tbody')
+            for (let i = 0; i < data.length; i++) {
+                let row = document.createElement('tr')
+                for (let j = 0; j < arr.length; j++) {
+                    let rowKey = arr[j]
+                    let cell = document.createElement('td')
+                    if (rowKey === 'birthday'){
+                        let date = new Date(data[i][rowKey])
+                        var formatDate = (date.getMonth()+1 + '/' + date.getDate() + '/' + date.getFullYear())
+                        cell.textContent = formatDate
+                        row.appendChild(cell)
+                        continue
+                    }
+                    cell.textContent = data[i][rowKey]
+                    row.appendChild(cell)
+                }
+                tableBody.appendChild(row)
+                tableTab.appendChild(tableBody)
+            }
+        })
+    </script>
 </body>
 </html>
