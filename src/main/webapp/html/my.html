@@ -1,4 +1,4 @@
-<html>
+<html lang="en">
 <head>
     <title>RPG</title>
     <script src=https://code.jquery.com/jquery-3.6.0.min.js></script>
@@ -7,33 +7,104 @@
 <body>
 <h1>RPG admin panel</h1>
 <h2>Accounts list:</h2>
+<form>
+    <label for="countPages">Count per page:</label>
+    <select id="countPages" name="countPages" onchange="handleCountPages()">
+        <option value="3">3</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+    </select>
+</form>
     <table id="tab">
         <thead>
             <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Title</th>
-                <th>Race</th>
-                <th>Profession</th>
+                <th id="hId">#</th>
+                <th id="hName">Name</th>
+                <th id="hTitle">Title</th>
+                <th id="hRace">Race</th>
+                <th id="hProfession">Profession</th>
                 <th>Level</th>
-                <th>Birthday</th>
+                <th id="hBirthday">Birthday</th>
                 <th>Banned</th>
+                <th>Edit</th>
+                <th>Delete</th>
             </tr>
         </thead>
+        <tbody id="body"></tbody>
     </table>
+    <div id="pageLine">
+        <p id="pageText">Pages:</p>
+        <div id="pages"></div>
+    </div>
+    <hr>
+    <h2>Create new account:</h2>
+    <div id="scopeOfInput">
+        <div class="newField">
+            <p>Name:</p>
+            <input type="text" id="newName">
+        </div>
+        <div class="newField">
+            <p>Title:</p>
+            <input type="text" id="newTitle">
+        </div>
+        <div class="newField">
+            <p>Race:</p>
+            <select id="newRace">
+                <option>HUMAN</option>
+                <option>DWARF</option>
+                <option>ELF</option>
+                <option>GIANT</option>
+                <option>ORC</option>
+                <option>TROLL</option>
+                <option>HOBBIT</option>
+            </select>
+        </div>
+        <div class="newField">
+            <p>Profession:</p>
+            <select id="newProfession">
+                <option>WARRIOR</option>
+                <option>ROGUE</option>
+                <option>SORCERER</option>
+                <option>CLERIC</option>
+                <option>PALADIN</option>
+                <option>NAZGUL</option>
+                <option>WARLOCK</option>
+                <option>DRUID</option>
+            </select>
+        </div>
+        <div class="newField">
+            <p>Level:</p>
+            <input type="number" min="0" max="100" id="newLevel">
+        </div>
+        <div class="newField">
+            <p>Birthday:</p>
+            <input type="date" id="newBirthday">
+        </div>
+        <div class="newField">
+            <p>Banned:</p>
+            <select id="newBanned">
+                <option>false</option>
+                <option>true</option>
+            </select>
+        </div>
+    </div>
+    <button id="saveNewAccount" onclick="saveAccount()">Save</button>
     <script>
-        $.get("/rest/players", function (data) {
+        function createTable(data) {
+            let body = document.getElementById('body')
+            body.innerHTML = ''
             let arr = ["id", "name", "title", "race", "profession", "level", "birthday", "banned"]
-            let tableTab = document.getElementById('tab')
-            let tableBody = document.createElement('tbody')
+            let tableTab = document.getElementById('body')
             for (let i = 0; i < data.length; i++) {
                 let row = document.createElement('tr')
                 for (let j = 0; j < arr.length; j++) {
                     let rowKey = arr[j]
                     let cell = document.createElement('td')
-                    if (rowKey === 'birthday'){
+                    cell.setAttribute('id', 'c' + i + '' + j)
+                    if (rowKey === 'birthday') {
                         let date = new Date(data[i][rowKey])
-                        var formatDate = (date.getMonth()+1 + '/' + date.getDate() + '/' + date.getFullYear())
+                        let formatDate = (date.getMonth() + 1 + '/' + date.getDate() + '/' + date.getFullYear())
                         cell.textContent = formatDate
                         row.appendChild(cell)
                         continue
@@ -41,10 +112,310 @@
                     cell.textContent = data[i][rowKey]
                     row.appendChild(cell)
                 }
-                tableBody.appendChild(row)
-                tableTab.appendChild(tableBody)
+                let cell = document.createElement('td')
+                cell.setAttribute('class', 'cell')
+                cell.setAttribute('id', 'e' + i)
+                let imgButton = document.createElement('img')
+                imgButton.src = '/img/edit.png'
+                imgButton.style.cursor = 'pointer'
+                imgButton.setAttribute('class','button')
+                imgButton.onclick = function (){
+                    editAccount(i)
+                }
+                let cell1 = document.createElement('td')
+                cell1.setAttribute('class', 'cell')
+                cell1.setAttribute('id', 'd' + i)
+                let imgDelete = document.createElement('img')
+                imgDelete.src = '/img/delete.png'
+                imgDelete.style.cursor = 'pointer'
+                imgDelete.setAttribute('class','button')
+                imgDelete.onclick = function (){
+                    deleteAccount(parseInt(data[i]['id']))
+                }
+                cell.appendChild(imgButton)
+                row.appendChild(cell)
+                tableTab.appendChild(row)
+                cell1.appendChild(imgDelete)
+                row.appendChild(cell1)
+                tableTab.appendChild(row)
             }
+        }
+        function createPages(countPerPage) {
+            let divBut = document.getElementById('pages')
+            pages.innerHTML = ''
+            $.get("/rest/players/count", function (data) {
+                let pages
+                if (data % countPerPage === 0) {
+                    pages = data / countPerPage
+                } else {
+                    pages = Math.floor(data / countPerPage) + 1
+                }
+                for (let i = 0; i < pages; i++) {
+                    let but = document.createElement('button')
+                    if (i === 0){
+                        but.setAttribute('style', 'color: red')
+                    }
+                    but.textContent = i + 1
+                    but.setAttribute('id', i)
+                    but.setAttribute('onclick', 'specificPageCreate(this.id)')
+                    divBut.appendChild(but)
+                }
+            })
+        }
+        $.get("/rest/players", function (data){
+            createTable(data)
+            createPages(data.length)
+
         })
+        let selectCount = 3
+        function handleCountPages(){
+            let selectElement = document.getElementById('countPages')
+            selectCount = parseInt(selectElement.value)
+            createPages(selectCount)
+            changePageOrCountOfPage(0,selectCount)
+        }
+        let page = 0
+        function specificPageCreate(id){
+            resetButtonsColor()
+            let button = $(("#"+id))
+            button.css('color', 'red')
+            page = id
+            changePageOrCountOfPage(id,selectCount)
+        }
+        function resetButtonsColor(){
+            let buttons = document.querySelectorAll('#pages button')
+            buttons.forEach(function (button){
+                button.style.color = 'black'
+            })
+        }
+        function changePageOrCountOfPage(pageNumber, pageSize){
+            $.ajax({
+                type: "GET",
+                url: "/rest/players",
+                data: {pageNumber: pageNumber, pageSize: pageSize},
+                success: function (data){
+                    if (data.length === 0 && page === 0){
+                        createTable(data)
+                    }
+                    if (data.length === 0){
+                        specificPageCreate(page - 1)
+                    }else {
+                        createTable(data)
+                    }
+                }
+            })
+        }
+        function deleteAccount(id) {
+            $.ajax({
+                type: "DELETE",
+                url: "/rest/players/" + id,
+                success: function () {
+                    changePageOrCountOfPage(page, selectCount)
+                    let divBut = document.getElementById('pages')
+                    divBut.innerHTML = ''
+                    $.get("/rest/players/count", function (data) {
+                        let pages
+                        if (data % selectCount === 0) {
+                            pages = data / selectCount
+                        } else {
+                            pages = Math.floor(data / selectCount) + 1
+                        }
+                        for (let i = 0; i < pages; i++) {
+                            let but = document.createElement('button')
+                            if (i == page) {
+                                but.setAttribute('style', 'color: red')
+                            }
+                            but.textContent = i + 1
+                            but.setAttribute('id', i)
+                            but.setAttribute('onclick', 'specificPageCreate(this.id)')
+                            divBut.appendChild(but)
+                        }
+                    })
+                }
+            })
+        }
+        function editAccount(i){
+            let cellDelete = document.getElementById('d' + i)
+            cellDelete.innerHTML = ''
+            let cellName = document.getElementById('c' + i + '1')
+            cellName.innerHTML = ''
+            let inputForName = document.createElement('input');
+            inputForName.setAttribute('type', 'text')
+            cellName.appendChild(inputForName)
+            let cellTitle = document.getElementById('c' + i + '2')
+            cellTitle.innerHTML = ''
+            let inputForTitle = document.createElement('input')
+            inputForTitle.setAttribute('type', 'text')
+            cellTitle.appendChild(inputForTitle)
+            let cellRace = document.getElementById('c' + i + '3')
+            cellRace.innerHTML = ''
+            let selectForRace = document.createElement('select')
+            let optionForRaceHuman = document.createElement('option')
+            optionForRaceHuman.textContent = 'HUMAN'
+            let optionForRaceDwarf = document.createElement('option')
+            optionForRaceDwarf.textContent = 'DWARF'
+            let optionForRaceElf = document.createElement('option')
+            optionForRaceElf.textContent = 'ELF'
+            let optionForRaceGiant = document.createElement('option')
+            optionForRaceGiant.textContent = 'GIANT'
+            let optionForRaceOrc = document.createElement('option')
+            optionForRaceOrc.textContent = 'ORC'
+            let optionForRaceTroll = document.createElement('option')
+            optionForRaceTroll.textContent = 'TROLL'
+            let optionForRaceHobbit = document.createElement('option')
+            optionForRaceHobbit.textContent = 'HOBBIT'
+            selectForRace.appendChild(optionForRaceHuman)
+            selectForRace.appendChild(optionForRaceDwarf)
+            selectForRace.appendChild(optionForRaceElf)
+            selectForRace.appendChild(optionForRaceGiant)
+            selectForRace.appendChild(optionForRaceOrc)
+            selectForRace.appendChild(optionForRaceTroll)
+            selectForRace.appendChild(optionForRaceHobbit)
+            cellRace.appendChild(selectForRace)
+            let cellProfession = document.getElementById('c' + i + '4')
+            cellProfession.innerHTML = ''
+            let selectForProfession = document.createElement('select')
+            let optionForProfessionWarrior = document.createElement('option')
+            optionForProfessionWarrior.textContent = 'WARRIOR'
+            let optionForProfessionRogue = document.createElement('option')
+            optionForProfessionRogue.textContent = 'ROGUE'
+            let optionForProfessionSorcerer = document.createElement('option')
+            optionForProfessionSorcerer.textContent = 'SORCERER'
+            let optionForProfessionCleric = document.createElement('option')
+            optionForProfessionCleric.textContent = 'CLERIC'
+            let optionForProfessionPaladin = document.createElement('option')
+            optionForProfessionPaladin.textContent = 'PALADIN'
+            let optionForProfessionNazgul = document.createElement('option')
+            optionForProfessionNazgul.textContent = 'NAZGUL'
+            let optionForProfessionWarlock = document.createElement('option')
+            optionForProfessionWarlock.textContent = 'WARLOCK'
+            let optionForProfessionDruid = document.createElement('option')
+            optionForProfessionDruid.textContent = 'DRUID'
+            selectForProfession.appendChild(optionForProfessionWarrior)
+            selectForProfession.appendChild(optionForProfessionRogue)
+            selectForProfession.appendChild(optionForProfessionSorcerer)
+            selectForProfession.appendChild(optionForProfessionCleric)
+            selectForProfession.appendChild(optionForProfessionPaladin)
+            selectForProfession.appendChild(optionForProfessionNazgul)
+            selectForProfession.appendChild(optionForProfessionWarlock)
+            selectForProfession.appendChild(optionForProfessionDruid)
+            cellProfession.appendChild(selectForProfession)
+            let cellBanned = document.getElementById('c' + i + '7')
+            cellBanned.innerHTML = ''
+            let selectForBanned = document.createElement('select')
+            let optionForBannedTrue = document.createElement('option')
+            optionForBannedTrue.textContent = "true"
+            let optionForBannedFalse = document.createElement('option')
+            optionForBannedFalse.textContent = "false"
+            selectForBanned.appendChild(optionForBannedTrue)
+            selectForBanned.appendChild(optionForBannedFalse)
+            cellBanned.appendChild(selectForBanned)
+            let cellEdit = document.getElementById('e' + i)
+            cellEdit.innerHTML = ''
+            let cellId = document.getElementById('c' + i + '0')
+            let playerId = parseInt(cellId.textContent)
+            let imgSave = document.createElement('img')
+            imgSave.src = '/img/save.png'
+            imgSave.style.cursor = 'pointer'
+            imgSave.setAttribute('class','button')
+            imgSave.onclick = function (){
+                let dataToEdit={
+                    name: inputForName.value,
+                    title: inputForTitle.value,
+                    race: selectForRace.value,
+                    profession: selectForProfession.value,
+                    banned: selectForBanned.value
+                }
+                console.log(dataToEdit)
+                $.ajax({
+                    url: "/rest/players/" + playerId,
+                    type: "POST",
+                    contentType: 'application/json',
+                    data: JSON.stringify(dataToEdit),
+                    dataType: 'json',
+                    success: function (data){
+                        changePageOrCountOfPage(page, selectCount)
+                        console.log(data)
+                    }
+                })
+            }
+            cellEdit.appendChild(imgSave)
+        }
+        function saveAccount(){
+            let checkCorrectData = true
+            let name = document.getElementById('newName')
+            if (name.value.length < 1 || name.value.length > 12){
+                alert("Incorrect name")
+                name.value = ''
+                checkCorrectData = false
+            }
+            let title = document.getElementById('newTitle')
+            if (title.value.length < 1 || title.value.length > 30){
+                alert("Incorrect title")
+                title.value = ''
+                checkCorrectData = false
+            }
+            let level = document.getElementById('newLevel')
+            if (level.value < 1 || level.value > 100){
+                alert("Incorrect level")
+                level.value = ''
+                checkCorrectData = false
+            }
+            let datee = document.getElementById('newBirthday')
+            if (isNaN(new Date(datee.value))){
+                alert("Incorrect date")
+                checkCorrectData = false
+            }
+            if (checkCorrectData){
+                let dataToAdd = {
+                    name: name.value,
+                    title: title.value,
+                    race: document.getElementById('newRace').value,
+                    profession: document.getElementById('newProfession').value,
+                    birthday: new Date(document.getElementById('newBirthday').value).getTime(),
+                    banned: document.getElementById('newBanned').value,
+                    level: document.getElementById('newLevel').value
+                }
+                $.ajax({
+                    url: "/rest/players/",
+                    type: "POST",
+                    contentType: 'application/json',
+                    data: JSON.stringify(dataToAdd),
+                    dataType: 'json',
+                    success: function (data){
+                        changePageOrCountOfPage(page, selectCount)
+                        name.value = ''
+                        title.value = ''
+                        level.value = ''
+                        document.getElementById('newRace').value = 'HUMAN'
+                        document.getElementById('newProfession').value = 'WARRIOR'
+                        document.getElementById('newBirthday').value = ''
+                        document.getElementById('newBanned').value = 'false'
+                        document.getElementById('newLevel').value = ''
+                        let divBut = document.getElementById('pages')
+                        divBut.innerHTML = ''
+                        $.get("/rest/players/count", function (data) {
+                            let pages
+                            if (data % selectCount === 0) {
+                                pages = data / selectCount
+                            } else {
+                                pages = Math.floor(data / selectCount) + 1
+                            }
+                            for (let i = 0; i < pages; i++) {
+                                let but = document.createElement('button')
+                                if (i == page) {
+                                    but.setAttribute('style', 'color: red')
+                                }
+                                but.textContent = i + 1
+                                but.setAttribute('id', i)
+                                but.setAttribute('onclick', 'specificPageCreate(this.id)')
+                                divBut.appendChild(but)
+                            }
+                        })
+                    }
+                })
+            }
+        }
     </script>
 </body>
 </html>

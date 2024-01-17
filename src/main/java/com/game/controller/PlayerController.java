@@ -76,8 +76,8 @@ public class PlayerController {
     }
 
     @DeleteMapping("/{ID}")
-    public ResponseEntity delete(@PathVariable("ID") long id) {
-        if (id <= 0) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        public ResponseEntity delete(@PathVariable("ID") long id) {
+            if (id <= 0) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
 
         Player player = playerService.delete(id);
         if (isNull(player)) {

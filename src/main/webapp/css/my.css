@@ -1,3 +1,63 @@
 #tab, #tab td, #tab th{
     border: 1px solid black;
 }
+#pages {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0 5px;
+}
+#pageText{
+    margin: 0;
+    padding: 0;
+}
+#pageLine{
+    display: flex;
+    align-items: center;
+}
+form{
+    margin: 0;
+    padding: 0;
+}
+.button{
+    border: 1px solid black;
+    margin: 2px;
+    padding: 0;
+    width: 45px;
+}
+.cell{
+    border: 1px solid black;
+    align-items: center;
+}
+#hName, #hRace, #hBirthday{
+    width: 80px;
+}
+#hTitle{
+    width: 180px;
+}
+#hId{
+    width: 20px;
+}
+#hProfession{
+    width: 90px;
+}
+p{
+    display: inline-block;
+    margin: 0;
+}
+#tab{
+    background-color: aquamarine;
+}
+#tab td, #tab th{
+    background-color: white;
+}
+.newField {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 250px;
+    margin-bottom: 5px;
+}
+.newField select, .newField input{
+    width: 150px;
+}
